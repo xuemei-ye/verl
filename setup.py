@@ -62,6 +62,8 @@ SGLANG_REQUIRES = [
 TRL_REQUIRES = ["trl<=0.9.6"]
 # Keep the legacy mbridge dependency available during its deprecation window.
 MCORE_REQUIRES = ["megatron-bridge", "mbridge"]
+# Keep in sync with E2B_SDK_REQUIREMENT in verl/sandbox/e2b_backend.py.
+E2B_REQUIRES = ["e2b>=2.50.0,<2.51"]
 
 extras_require = {
     "test": TEST_REQUIRES,
@@ -74,6 +76,7 @@ extras_require = {
     "trl": TRL_REQUIRES,
     "mcore": MCORE_REQUIRES,
     "trtllm": TRTLLM_REQUIRES,
+    "e2b": E2B_REQUIRES,
 }
 
 

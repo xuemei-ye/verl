@@ -1,0 +1,28 @@
+# E2B credentials are read only from environment variables (E2B_API_KEY, E2B_DOMAIN / E2B_API_URL).
+# Never put keys in this file.
+tools:
+  - class_name: verl.tools.e2b_python_tool.E2BPythonTool
+    config:
+      type: native
+      backend: e2b
+      template: base
+      max_concurrency: 1            # alive sandboxes per AgentLoopWorker process, not a global limit
+      sandbox_ttl_s: 600            # server-side lifetime; reclaims sandboxes that local close missed
+      create_request_timeout_s: 60  # control-plane create request timeout, not the TTL
+      command_timeout_s: 30         # per-command timeout for model-written code
+      close_request_timeout_s: 30   # kill request timeout
+      max_code_chars: 20000
+      max_output_chars: 16000       # per-stream cap on the tool side; the model sees min(this, max_tool_response_length)
+    tool_schema:
+      type: function
+      function:
+        name: python
+        description: Execute Python code in an isolated sandbox and return stdout, stderr and exit status.
+        parameters:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Python source code to execute. Use print() to output results.
+          required:
+            - code

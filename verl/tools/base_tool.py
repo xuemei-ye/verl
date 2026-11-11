@@ -21,6 +21,22 @@ from verl.utils.rollout_trace import rollout_trace_op
 from .schemas import OpenAIFunctionToolSchema, ToolResponse
 
 
+class FatalToolError(RuntimeError):
+    """Infrastructure failure that must abort the rollout instead of becoming a model observation.
+
+    Examples: authentication failure, invalid configuration, protocol mismatch. Errors caused by the
+    model's own tool input (bad arguments, non-zero exit codes) must be returned as ``ToolResponse``.
+    """
+
+
+class TransientToolError(FatalToolError):
+    """Retryable infrastructure failure (capacity, network, control-plane timeout).
+
+    Subclasses ``FatalToolError`` so callers without a retry/drop mechanism still abort rather than train on
+    infrastructure noise; a caller that can drop and resample a trajectory may catch this class first.
+    """
+
+
 class BaseTool:
     """Base class for tools.
 

@@ -64,6 +64,21 @@ class FakeFailingTool(FakeTool):
         raise RuntimeError("database connection failed")
 
 
+class FakeFatalTool(FakeTool):
+    """A fake tool that raises a configurable exception during execute and records release."""
+
+    def __init__(self, name: str, error: Exception):
+        super().__init__(name)
+        self.error = error
+        self.released = []
+
+    async def execute(self, instance_id, parameters, **kwargs):
+        raise self.error
+
+    async def release(self, instance_id):
+        self.released.append(instance_id)
+
+
 class FakeLongResponseTool(FakeTool):
     """A fake tool that returns a long response."""
 
@@ -151,6 +166,28 @@ class TestCallToolErrorHandling(unittest.IsolatedAsyncioTestCase):
         assert reward == 0.0
         assert "failing_tool" in response.text
         assert "database connection failed" in response.text
+
+    async def test_fatal_tool_error_is_reraised_and_released(self):
+        """FatalToolError must abort the rollout instead of becoming an observation, and still release."""
+        from verl.tools.base_tool import FatalToolError
+
+        tool = FakeFatalTool("sandbox", FatalToolError("auth failed"))
+        loop = _make_tool_agent_loop({"sandbox": tool})
+        tool_call = FakeFunctionCall(name="sandbox", arguments='{"code": "print(1)"}')
+        with self.assertRaises(FatalToolError):
+            await loop._call_tool(tool_call, {}, self.agent_data)
+        assert tool.released == ["instance_1"]
+
+    async def test_transient_tool_error_is_reraised(self):
+        """TransientToolError is a FatalToolError and is also re-raised in P0."""
+        from verl.tools.base_tool import TransientToolError
+
+        tool = FakeFatalTool("sandbox", TransientToolError("rate limited"))
+        loop = _make_tool_agent_loop({"sandbox": tool})
+        tool_call = FakeFunctionCall(name="sandbox", arguments='{"code": "print(1)"}')
+        with self.assertRaises(TransientToolError):
+            await loop._call_tool(tool_call, {}, self.agent_data)
+        assert tool.released == ["instance_1"]
 
     async def test_left_truncation_keeps_response_tail(self):
         """Left truncation should drop the left side and preserve the response tail."""

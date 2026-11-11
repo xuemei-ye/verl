@@ -30,6 +30,7 @@ from verl.experimental.agent_loop.agent_loop import (
 )
 from verl.experimental.agent_loop.tool_parser import FunctionCall, ToolParser
 from verl.experimental.agent_loop.utils import build_gpt_oss_tool_response_text
+from verl.tools.base_tool import FatalToolError
 from verl.tools.function_tool import FunctionTool, normalize_function_tool_return
 from verl.tools.schemas import OpenAIFunctionCallSchema, OpenAIFunctionParsedSchema, ToolResponse
 from verl.utils.profiler import simple_timer
@@ -521,6 +522,8 @@ class ToolAgentLoop(AgentLoopBase):
                 tool_execution_response, tool_reward, res = await tool.execute(
                     instance_id, tool_args, agent_data=agent_data
                 )
+        except FatalToolError:
+            raise
         except Exception as e:
             logger.warning(f"Error executing tool '{tool_name}': {e}")
             return ToolResponse(text=f"Error executing tool '{tool_name}': {e}"), 0.0, {}
