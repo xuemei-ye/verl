@@ -13,8 +13,28 @@
 # limitations under the License.
 
 import re
+from decimal import Decimal, InvalidOperation
 
 _SOLUTION_CLIP_CHARS = 300
+_NUMBER_PATTERN = r"-?(?:\d[\d,]*(?:\.\d*)?|\.\d+)"
+_STRICT_ANSWER_PATTERN = re.compile(
+    rf"####\s*(?:\$\s*)?(?:\\boxed\s*\{{\s*({_NUMBER_PATTERN})\s*\}}|({_NUMBER_PATTERN}))(?:\s*\$)?"
+)
+
+
+def _normalize_number(value):
+    """Normalize equivalent GSM8K numeric spellings before comparison."""
+    value = str(value).strip().replace(",", "")
+    try:
+        number = Decimal(value)
+    except InvalidOperation:
+        return value
+
+    if not number.is_finite():
+        return value
+    if number == 0:
+        return "0"
+    return format(number.normalize(), "f")
 
 
 def extract_solution(solution_str, method="strict"):
@@ -27,13 +47,15 @@ def extract_solution(solution_str, method="strict"):
         solution_str = solution_str[-_SOLUTION_CLIP_CHARS:]
 
     if method == "strict":
-        # this also tests the formatting of the model
-        solutions = re.findall("#### (\\-?[0-9\\.\\,]+)", solution_str)
-        if len(solutions) == 0:
+        # Keep the required ``####`` marker while accepting the common GSM8K
+        # renderings ``#### 12``, ``#### \\boxed{12}``, and
+        # ``#### $\\boxed{12}$``.
+        solutions = [match.group(1) or match.group(2) for match in _STRICT_ANSWER_PATTERN.finditer(solution_str)]
+        if not solutions:
             final_answer = None
         else:
             # take the last solution
-            final_answer = solutions[-1].replace(",", "").replace("$", "")
+            final_answer = _normalize_number(solutions[-1])
     elif method == "flexible":
         answer = re.findall("(\\-?[0-9\\.\\,]+)", solution_str)
         final_answer = None
@@ -66,7 +88,7 @@ def compute_score(solution_str, ground_truth, method="strict", format_score=0.0,
     if answer is None:
         return 0
     else:
-        if answer == ground_truth:
+        if answer == _normalize_number(ground_truth):
             return score
         else:
             return format_score
