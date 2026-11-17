@@ -5,7 +5,7 @@ tools:
     config:
       type: native
       backend: e2b
-      template: base
+      template: 5jytmuaarw7uk3blr3my
       max_concurrency: 1            # alive sandboxes per AgentLoopWorker process, not a global limit
       sandbox_ttl_s: 600            # server-side lifetime; reclaims sandboxes that local close missed
       create_request_timeout_s: 60  # control-plane create request timeout, not the TTL

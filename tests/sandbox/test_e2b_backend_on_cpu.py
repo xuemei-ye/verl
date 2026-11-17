@@ -276,8 +276,35 @@ class TestE2BLocalChecks(unittest.TestCase):
             settings = E2BConnectionSettings.from_env()
             assert settings.api_params() == {"api_key": "k", "api_url": "http://e2b-api.internal"}
 
+    def test_settings_from_env_with_proxy(self):
+        env = {
+            "E2B_API_KEY": "k",
+            "E2B_DOMAIN": "dev-e2b.xiaobei.top",
+            "E2B_API_URL": "https://dev-e2b.xiaobei.top",
+            "E2B_PROXY": " http://10.202.9.50:3928 ",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            settings = E2BConnectionSettings.from_env()
+        assert settings.api_params() == {
+            "api_key": "k",
+            "domain": "dev-e2b.xiaobei.top",
+            "api_url": "https://dev-e2b.xiaobei.top",
+            "proxy": "http://10.202.9.50:3928",
+        }
+
+    def test_settings_blank_proxy_is_omitted(self):
+        env = {"E2B_API_KEY": "k", "E2B_DOMAIN": "d.example", "E2B_PROXY": "  "}
+        with patch.dict(os.environ, env, clear=True):
+            settings = E2BConnectionSettings.from_env()
+        assert settings.proxy is None
+        assert "proxy" not in settings.api_params()
+
     def test_settings_repr_hides_key(self):
         assert "test-key-123" not in repr(SETTINGS)
+
+    def test_settings_repr_hides_proxy(self):
+        settings = E2BConnectionSettings(api_key="k", domain="d", proxy="http://user:pass@10.0.0.1:3128")
+        assert "user:pass" not in repr(settings)
 
     def test_sdk_not_installed(self):
         with patch.object(importlib.metadata, "version", side_effect=importlib.metadata.PackageNotFoundError):

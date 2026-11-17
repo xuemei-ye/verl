@@ -78,18 +78,25 @@ class E2BConnectionSettings:
     api_key: str = field(repr=False)
     domain: Optional[str] = None
     api_url: Optional[str] = None
+    proxy: Optional[str] = field(default=None, repr=False)
 
     @classmethod
     def from_env(cls) -> "E2BConnectionSettings":
         api_key = os.environ.get("E2B_API_KEY", "").strip()
         domain = os.environ.get("E2B_DOMAIN", "").strip() or None
         api_url = os.environ.get("E2B_API_URL", "").strip() or None
+        proxy = os.environ.get("E2B_PROXY", "").strip() or None
         if not api_key:
             raise SandboxConfigurationError("Environment variable E2B_API_KEY is not set.")
         # Refuse to silently fall back to the public e2b.app endpoint.
         if domain is None and api_url is None:
             raise SandboxConfigurationError("Set E2B_DOMAIN (or E2B_API_URL for self-hosted deployments).")
-        return cls(api_key=api_key, domain=domain, api_url=api_url)
+        return cls(
+            api_key=api_key,
+            domain=domain,
+            api_url=api_url,
+            proxy=proxy,
+        )
 
     def api_params(self) -> dict[str, Any]:
         params: dict[str, Any] = {"api_key": self.api_key}
@@ -97,6 +104,8 @@ class E2BConnectionSettings:
             params["domain"] = self.domain
         if self.api_url is not None:
             params["api_url"] = self.api_url
+        if self.proxy is not None:
+            params["proxy"] = self.proxy
         return params
 
 
