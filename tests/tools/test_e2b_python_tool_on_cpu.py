@@ -93,9 +93,7 @@ class TestE2BPythonToolConfig(unittest.TestCase):
 
     def test_init_requires_env_and_makes_no_remote_call(self):
         sdk = make_fake_sdk()
-        with patch.dict(os.environ, {}, clear=True), patch(
-            "verl.sandbox.e2b_backend.load_e2b_sdk", return_value=sdk
-        ):
+        with patch.dict(os.environ, {}, clear=True), patch("verl.sandbox.e2b_backend.load_e2b_sdk", return_value=sdk):
             with self.assertRaises(SandboxConfigurationError):
                 E2BPythonTool(config={"type": "native"}, tool_schema=SCHEMA)
         _make_tool(sdk)
@@ -249,8 +247,9 @@ class TestPreflight(unittest.IsolatedAsyncioTestCase):
         with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
             f.write(yaml_text)
         try:
-            with patch.dict(os.environ, {}, clear=True), patch(
-                "verl.sandbox.e2b_backend.load_e2b_sdk", return_value=make_fake_sdk()
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                patch("verl.sandbox.e2b_backend.load_e2b_sdk", return_value=make_fake_sdk()),
             ):
                 assert preflight_main(["--tool-config", f.name]) == 1
         finally:

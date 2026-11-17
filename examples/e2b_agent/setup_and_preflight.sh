@@ -26,6 +26,10 @@ fail() {
 [[ -f "${TOOL_CONFIG_PATH}" ]] || fail "tool config not found: ${TOOL_CONFIG_PATH}"
 [[ -n "${E2B_API_KEY:-}" ]] || fail "E2B_API_KEY must be injected through the Jiutian secret environment"
 
+# A caller may source this script after assigning E2B_API_KEY as a regular
+# shell variable. Export it explicitly so the Python preflight can read it.
+export E2B_API_KEY
+
 echo "[e2b-setup] python=${PYTHON_BIN}"
 echo "[e2b-setup] verl_root=${VERL_ROOT}"
 echo "[e2b-setup] wheel_dir=${E2B_WHEEL_DIR}"
@@ -55,4 +59,3 @@ echo "[e2b-setup] E2B SDK ${installed_version} installed; starting preflight"
     --tool-config "${TOOL_CONFIG_PATH}"
 
 echo "[e2b-setup] READY: offline install and E2B preflight succeeded"
-
